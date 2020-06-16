@@ -2,17 +2,16 @@
 import asyncio
 import logging
 
-from plumlightpad import Plum
 import voluptuous as vol
 
+from homeassistant.components.plum_lightpad.const import DOMAIN, PLUM_DATA
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME, EVENT_HOMEASSISTANT_STOP
 from homeassistant.helpers import discovery
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 import homeassistant.helpers.config_validation as cv
 
-from .const import DOMAIN
-
 _LOGGER = logging.getLogger(__name__)
+
 
 CONFIG_SCHEMA = vol.Schema(
     {
@@ -30,10 +29,7 @@ CONFIG_SCHEMA = vol.Schema(
 async def async_setup(hass, config):
     """Plum Lightpad Platform initialization."""
 
-    conf = config[DOMAIN]
-    plum = Plum(conf[CONF_USERNAME], conf[CONF_PASSWORD])
-
-    hass.data[DOMAIN] = plum
+    plum = hass.data[PLUM_DATA]
 
     def cleanup(event):
         """Clean up resources."""
@@ -41,16 +37,13 @@ async def async_setup(hass, config):
 
     hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, cleanup)
 
-    cloud_web_sesison = async_get_clientsession(hass, verify_ssl=True)
-    await plum.loadCloudData(cloud_web_sesison)
-
     async def new_load(device):
         """Load light and sensor platforms when LogicalLoad is detected."""
         await asyncio.wait(
             [
                 hass.async_create_task(
                     discovery.async_load_platform(
-                        hass, "light", DOMAIN, discovered=device, hass_config=conf
+                        hass, "light", DOMAIN, discovered=device, hass_config=config
                     )
                 )
             ]
@@ -62,7 +55,7 @@ async def async_setup(hass, config):
             [
                 hass.async_create_task(
                     discovery.async_load_platform(
-                        hass, "light", DOMAIN, discovered=device, hass_config=conf
+                        hass, "light", DOMAIN, discovered=device, hass_config=config
                     )
                 )
             ]
